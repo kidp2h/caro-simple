@@ -34,8 +34,7 @@ class Menu:
         self.ipRoom = None
         self.board = None
         self.inputIp = tk.StringVar()
-        tk.Label(self.window, text="Player 1 name:").pack()
-        tk.Entry(self.window, textvariable=self.player1_name).pack()
+
         self.labelIpRoom = tk.Label(self.window, text="IP Room: {ip} ".format(
             ip=self.ipRoom))
         self.labelIpRoom.pack()
@@ -56,15 +55,11 @@ class Menu:
         messagebox.showinfo(str(title), str(msg))
 
     def createRoom(self):
-        if (self.player1_name.get() == ""):
-            messagebox.showerror("Error", "Player name is required")
-            return
+
         status = self.server.makeHost()
 
     def connectRoom(self):
-        if (self.player1_name.get() == ""):
-            messagebox.showerror("Error", "Player name is required")
-            return
+
         status = self.server.joinHost(self.inputIp.get())
 
     def startGame(self, type):
@@ -75,7 +70,6 @@ class Menu:
 
         self.window.withdraw()
 
-        print("set board")
         self.board.start()
 
     def enable(self):
@@ -84,21 +78,26 @@ class Menu:
     def fillWitPos(self, row, col):
 
         btn = self.board.get_key_by_value(self.board.cells, (row, col))
-        print(btn)
-        # print(self.game.winning_combos)
         move = Move(row, col, self.board.game.current)
-        # if (self.game.isValidMove(move) == True):
-        # print("Before", self.game.current_moves[row][col])
         self.board.game.processMove(move)
         self.board.updateButton(btn)
-        # print("After", self.game.current_moves[row][col])
-        # pprint.pprint(self.game.current_moves)
-        # self.server.sendData("{}|{}|{}|{}|".format("hit", row, col), btn)
         self.board.game.switch()
         self.board.updateInfo()
         if (self.board.game.winner != None):
             for button in self.board.cells.keys():
                 button.config(state=tk.DISABLED)
+
+    def again(self):
+        for button, coordinates in self.board.cells.items():
+            if coordinates in self.board.game.winning_path:
+                button.config(bg="white")
+        self.board.game.reset()
+        self.board.game.can = True
+        for button in self.board.cells.keys():
+            button.config(text="")
+            button.config(fg="black")
+        for button in self.board.cells.keys():
+            button.config(state=tk.NORMAL)
 
 
 class Game:
@@ -195,7 +194,6 @@ class Board:
         self.create_menu()
 
     def quit(self):
-        print("eee")
         self.root.destroy()
 
         # quit()
@@ -205,7 +203,6 @@ class Board:
         menu = tk.Menu(master=menu_bar)
         menu.add_command(label="Play Again", command=self.resetBoard)
         menu.add_separator()
-        menu.add_command(label="Exit", command=quit)
         menu_bar.add_cascade(label="Menu", menu=menu)
 
     def create_widgets(self):
@@ -234,8 +231,6 @@ class Board:
                 cell.bind("<Button-1>", self.fill)
                 row.append(cell)
                 self.cells[cell] = (i, j)
-        # print(self.cells)
-        # self.board.append(row)
 
     def get_key_by_value(self, dictionary: dict, tup: tuple):
         for key, value in dictionary.items():
@@ -246,16 +241,11 @@ class Board:
     def fill(self, event):
         btn = event.widget
         row, col = self.cells[btn]
-        # print(self.game.winning_combos)
         move = Move(row, col, self.game.current)
         if (self.game.isValidMove(move) == True):
-            # print("Before", self.game.current_moves[row][col])
             self.game.processMove(move)
             self.updateButton(btn)
-            # print("After", self.game.current_moves[row][col])
-            # pprint.pprint(self.game.current_moves)
-            print("send ne")
-            self.server.sendData("{}|{}|{}|".format("hit", row, col), btn)
+            self.server.sendData("{}|{}|{}|".format("hit", row, col))
             self.game.switch()
             self.game.can = False
             self.updateInfo()
@@ -275,17 +265,24 @@ class Board:
             for button, coordinates in self.cells.items():
                 if coordinates in self.game.winning_path:
                     button.config(bg=self.game.winner.color)
-            self.game.current = None
+            # self.game.current = None
             self.labelWinner.config(
                 text="Winner: {name}".format(name=self.game.winner.symbol))
         self.labelCurrent.config(text="Current Symbol: {symbol}".format(
             symbol=self.game.current.symbol if self.game.current != None else "None"))
 
     def resetBoard(self):
+        for button, coordinates in self.cells.items():
+            if coordinates in self.game.winning_path:
+                button.config(bg="white")
         self.game.reset()
+        self.game.can = True
         for button in self.cells.keys():
             button.config(text="")
             button.config(fg="black")
+        for button in self.cells.keys():
+            button.config(state=tk.NORMAL)
+        self.server.sendData("again")
 
     def start(self):
         self.create_widgets()

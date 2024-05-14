@@ -16,7 +16,6 @@ class Server():
         self.board = None
         self.player1 = None
         self.player2 = None
-        self.currentBtn = None
         self.ipRoom = ""
         self.name = ""
 
@@ -70,20 +69,20 @@ class Server():
             self.dataReceive = self.connection.recv(
                 1024).decode()  # Đọc dữ liệu server trả về
             if (self.dataReceive != ""):
-                friend = self.dataReceive.split("|")[0]
-                action = self.dataReceive.split("|")[1]
-                btn = self.dataReceive.split("|")[4]
-                row = int(self.dataReceive.split("|")[2])
-                col = int(self.dataReceive.split("|")[3])
-                print(self.dataReceive)
-                # print("client: ", action, friend, btn, row, col)
-                if (action == "hit" and friend == "server"):
-                    self.gui.fillWitPos(row, col)
-                    self.gui.enable()
-                    print("xsdsd")
-
+                if (self.dataReceive.split("|")[1] != "again"):
+                    friend = self.dataReceive.split("|")[0]
+                    action = self.dataReceive.split("|")[1]
+                    btn = self.dataReceive.split("|")[4]
+                    row = int(self.dataReceive.split("|")[2])
+                    col = int(self.dataReceive.split("|")[3])
+                    if (action == "hit" and friend == "server"):
+                        self.gui.fillWitPos(row, col)
+                        self.gui.enable()
+                else:
+                    friend = self.dataReceive.split("|")[0]
+                    if (friend == "server"):
+                        self.gui.again()
             self.dataReceive = ""
-            self.currentBtn = None
 
     def server(self, addr, s):
         try:
@@ -91,26 +90,23 @@ class Server():
             while True:
                 self.dataReceive = self.connection.recv(1024).decode()
                 if (self.dataReceive != ""):
-                    friend = self.dataReceive.split("|")[0]
-                    action = self.dataReceive.split("|")[1]
-                    row = int(self.dataReceive.split("|")[2])
-                    col = int(self.dataReceive.split("|")[3])
-                    btn = self.dataReceive.split("|")[4]
-                    # print("server: ", action, friend, btn, row, col)
-                    print(self.dataReceive, self.board)
-                    if (action == "hit" and friend == "client"):
-                        self.gui.fillWitPos(row, col)
-                        self.gui.enable()
-                        print("xxxxx")
+                    if (self.dataReceive.split("|")[1] != "again"):
+                        friend = self.dataReceive.split("|")[0]
+                        action = self.dataReceive.split("|")[1]
+                        row = int(self.dataReceive.split("|")[2])
+                        col = int(self.dataReceive.split("|")[3])
+                        btn = self.dataReceive.split("|")[4]
+                        if (action == "hit" and friend == "client"):
+                            self.gui.fillWitPos(row, col)
+                            self.gui.enable()
+                    else:
+                        friend = self.dataReceive.split("|")[0]
+                        if (friend == "client"):
+                            self.gui.again()
+
                 self.dataReceive = ""
-                self.currentBtn = None
         finally:
             s.close()  # đóng socket
 
-    def sendData(self, data, btn):
-        # print(data, btn)
-        # self.currentBtn = btn
-        # Gửi dữ liệu lên server`
-        # data = str("{}|".format(self.name) + data)
-        # print(data)
+    def sendData(self, data):
         self.connection.sendall(str("{}|".format(self.name) + data).encode())
