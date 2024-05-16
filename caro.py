@@ -2,7 +2,7 @@ from itertools import cycle
 import pprint
 import time
 import tkinter as tk
-from tkinter import Label, font
+from tkinter import Label, PhotoImage
 from tkinter import messagebox
 from typing import NamedTuple, Tuple
 from server import Server
